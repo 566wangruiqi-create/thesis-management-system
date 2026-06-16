@@ -1,5 +1,6 @@
 (function () {
   const USER_KEY = "thesis_current_user";
+  const TOKEN_KEY = "thesis_auth_token";
 
   const roleNames = {
     admin: "管理员",
@@ -68,26 +69,50 @@
     return isInPagesDir() ? "../dashboard.html" : "./dashboard.html";
   }
 
+  function normalizeUser(user) {
+    if (!user) return null;
+    return {
+      ...user,
+      roleName: user.roleName || user.role_name,
+      teacherId: user.teacherId || user.teacher_id || "",
+      studentId: user.studentId || user.student_id || ""
+    };
+  }
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
   function getCurrentUser() {
     const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return raw ? normalizeUser(JSON.parse(raw)) : null;
   }
 
   function setCurrentUser(user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem(USER_KEY, JSON.stringify(normalizeUser(user)));
+  }
+
+  function setToken(token) {
+    localStorage.setItem(TOKEN_KEY, token);
   }
 
   function clearCurrentUser() {
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   }
 
-  function login(username, password) {
+  async function login(username, password) {
+    if (window.ThesisAPI && window.ThesisAPI.login) {
+      const result = await window.ThesisAPI.login(username, password);
+      setToken(result.token);
+      setCurrentUser(result.user);
+      return result.user;
+    }
+
     const user = window.MOCK_DATA.users.find(
       (item) => item.username === username && item.password === password
     );
-    if (!user) {
-      throw new Error("账号或密码不正确。");
-    }
+    if (!user) throw new Error("账号或密码不正确。");
     const { password: _, ...safeUser } = user;
     setCurrentUser(safeUser);
     return safeUser;
@@ -95,7 +120,8 @@
 
   function requireAuth() {
     const user = getCurrentUser();
-    if (!user) {
+    const token = getToken();
+    if (!user || !token) {
       window.location.href = loginPath();
       return null;
     }
@@ -106,17 +132,22 @@
     const form = document.querySelector("#loginForm");
     if (!form) return;
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const username = document.querySelector("#username").value.trim();
       const password = document.querySelector("#password").value.trim();
       const message = document.querySelector("#loginMessage");
+      const submitButton = form.querySelector("button[type='submit']");
 
       try {
-        login(username, password);
+        message.textContent = "正在登录...";
+        if (submitButton) submitButton.disabled = true;
+        await login(username, password);
         window.location.href = "./dashboard.html";
       } catch (error) {
         message.textContent = error.message;
+      } finally {
+        if (submitButton) submitButton.disabled = false;
       }
     });
   }
@@ -230,6 +261,7 @@
     requireAuth,
     renderShell,
     getCurrentUser,
+    getToken,
     hasAccess,
     renderForbidden,
     clearCurrentUser

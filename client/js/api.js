@@ -1,4 +1,7 @@
 (function () {
+  const API_BASE_URL = "http://localhost:3000/api";
+  const TOKEN_KEY = "thesis_auth_token";
+  const USER_KEY = "thesis_current_user";
   const STORAGE_KEY = "thesis_mock_data";
 
   function clone(value) {
@@ -7,6 +10,110 @@
 
   function today() {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  function formatDate(value) {
+    if (!value) return "";
+    return String(value).includes("T") ? String(value).slice(0, 10) : String(value);
+  }
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  async function request(path, options = {}) {
+    const token = getToken();
+    const headers = {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.headers || {})
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers
+    });
+
+    let result = null;
+    try {
+      result = await response.json();
+    } catch (error) {
+      result = null;
+    }
+
+    if (response.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+
+    if (!response.ok || (result && result.success === false)) {
+      throw new Error((result && result.message) || "请求失败");
+    }
+
+    return result ? result.data : null;
+  }
+
+  function normalizeUser(user) {
+    if (!user) return null;
+    return {
+      ...user,
+      roleName: user.roleName || user.role_name,
+      teacherId: user.teacherId || user.teacher_id || "",
+      studentId: user.studentId || user.student_id || ""
+    };
+  }
+
+  function normalizeTopic(topic) {
+    return {
+      ...topic,
+      teacherId: topic.teacherId || topic.teacher_id,
+      teacherName: topic.teacherName || topic.teacher_name,
+      selectedCount: topic.selectedCount ?? topic.selected_count ?? 0
+    };
+  }
+
+  function normalizeApplication(item) {
+    return {
+      ...item,
+      studentId: item.studentId || item.student_id,
+      studentName: item.studentName || item.student_name,
+      topicId: item.topicId || item.topic_id,
+      topicTitle: item.topicTitle || item.topic_title,
+      teacherId: item.teacherId || item.teacher_id,
+      teacherName: item.teacherName || item.teacher_name,
+      applyDate: formatDate(item.applyDate || item.apply_date),
+      reviewDate: formatDate(item.reviewDate || item.review_date)
+    };
+  }
+
+  function normalizeMaterial(item) {
+    return {
+      ...item,
+      studentId: item.studentId || item.student_id,
+      teacherId: item.teacherId || item.teacher_id,
+      status: item.status
+    };
+  }
+
+  function normalizeDefense(item) {
+    return {
+      ...item,
+      studentId: item.studentId || item.student_id,
+      teacherId: item.teacherId || item.teacher_id,
+      status: item.status
+    };
+  }
+
+  function normalizeArchive(item) {
+    return {
+      ...item,
+      studentId: item.studentId || item.student_id,
+      teacherId: item.teacherId || item.teacher_id,
+      status: item.status
+    };
   }
 
   function getData() {
@@ -50,6 +157,75 @@
   }
 
   const ThesisAPI = {
+    API_BASE_URL,
+
+    async login(username, password) {
+      const data = await request("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ username, password })
+      });
+
+      return {
+        token: data.token,
+        user: normalizeUser(data.user)
+      };
+    },
+
+    async getMe() {
+      return normalizeUser(await request("/auth/me"));
+    },
+
+    async getTopics() {
+      const topics = await request("/topics");
+      return topics.map(normalizeTopic);
+    },
+
+    async addTopic(topic) {
+      const data = await request("/topics", {
+        method: "POST",
+        body: JSON.stringify({
+          title: topic.title,
+          major: topic.major,
+          quota: topic.quota,
+          description: topic.description,
+          teacher_id: topic.teacherId
+        })
+      });
+      return normalizeTopic(data);
+    },
+
+    async applyTopic(topicId) {
+      return request("/applications", {
+        method: "POST",
+        body: JSON.stringify({ topic_id: topicId })
+      });
+    },
+
+    async getApplicationsFromServer() {
+      const applications = await request("/applications");
+      return applications.map(normalizeApplication);
+    },
+
+    async getDashboardStatsFromServer() {
+      const [topics, applications, materials, defenses, archives] = await Promise.all([
+        this.getTopics(),
+        this.getApplicationsFromServer(),
+        request("/materials").then((items) => items.map(normalizeMaterial)),
+        request("/defenses").then((items) => items.map(normalizeDefense)),
+        request("/archives").then((items) => items.map(normalizeArchive))
+      ]);
+
+      return {
+        topicCount: topics.length,
+        selectedStudentCount: new Set(
+          applications.filter((item) => item.status === "已通过").map((item) => item.studentId)
+        ).size,
+        pendingMaterialCount: materials.filter((item) => item.status === "待审核").length,
+        arrangedDefenseCount: defenses.length,
+        archivedCount: archives.filter((item) => item.status === "已归档").length
+      };
+    },
+
     resetMockData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(clone(window.MOCK_DATA)));
     },
@@ -70,11 +246,11 @@
       return clone(getData().teachers);
     },
 
-    getTopics() {
+    getMockTopics() {
       return clone(getData().topics);
     },
 
-    addTopic(topic) {
+    addMockTopic(topic) {
       const data = getData();
       const teacher = findTeacher(data, topic.teacherId);
       const newTopic = {
@@ -91,46 +267,6 @@
       data.topics.unshift(newTopic);
       saveData(data);
       return clone(newTopic);
-    },
-
-    applyTopic(topicId, studentId) {
-      const data = getData();
-      const topic = getTopicById(data, topicId);
-      const student = findStudent(data, studentId);
-
-      if (!topic || topic.status !== "可选") {
-        throw new Error("该课题当前不可申请。");
-      }
-      if (!student) {
-        throw new Error("未找到学生信息。");
-      }
-
-      const duplicate = data.applications.find(
-        (item) =>
-          item.studentId === studentId &&
-          item.topicId === topicId &&
-          item.status !== "已拒绝"
-      );
-      if (duplicate) {
-        throw new Error("你已经提交过该课题申请。");
-      }
-
-      const application = {
-        id: nextId("A", data.applications),
-        studentId,
-        studentName: student.name,
-        topicId,
-        topicTitle: topic.title,
-        teacherId: topic.teacherId,
-        teacherName: topic.teacherName,
-        status: "待审核",
-        applyDate: today(),
-        reviewDate: "",
-        comment: ""
-      };
-      data.applications.unshift(application);
-      saveData(data);
-      return clone(application);
     },
 
     getApplications() {

@@ -1,27 +1,14 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("dashboard", "后台首页");
   if (!user) return;
 
-  const stats = ThesisAPI.getDashboardStats();
   const statsGrid = document.querySelector("#statsGrid");
-  const statItems = [
-    ["课题总数", stats.topicCount],
-    ["已选题人数", stats.selectedStudentCount],
-    ["待审核材料数", stats.pendingMaterialCount],
-    ["已安排答辩人数", stats.arrangedDefenseCount],
-    ["已归档论文数", stats.archivedCount]
-  ];
+  const recentApplications = document.querySelector("#recentApplications");
 
-  statsGrid.innerHTML = statItems
-    .map(
-      ([label, value]) => `
-        <article class="stat-card">
-          <div class="label">${label}</div>
-          <div class="value">${value}</div>
-        </article>
-      `
-    )
-    .join("");
+  statsGrid.innerHTML = `
+    <article class="stat-card"><div class="label">数据加载中</div><div class="value">...</div></article>
+  `;
+  recentApplications.innerHTML = AppUI.emptyRow(5, "正在加载选题申请记录");
 
   const flowItems = [
     ["发布课题", "教师维护可选论文课题"],
@@ -45,7 +32,44 @@
     )
     .join("");
 
-  const applications = ThesisAPI.getApplications()
+  async function loadStats() {
+    try {
+      return await ThesisAPI.getDashboardStatsFromServer();
+    } catch (error) {
+      AppUI.toast(`首页统计暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getDashboardStats();
+    }
+  }
+
+  async function loadApplications() {
+    try {
+      return await ThesisAPI.getApplicationsFromServer();
+    } catch (error) {
+      return ThesisAPI.getApplications();
+    }
+  }
+
+  const stats = await loadStats();
+  const statItems = [
+    ["课题总数", stats.topicCount],
+    ["已选题人数", stats.selectedStudentCount],
+    ["待审核材料数", stats.pendingMaterialCount],
+    ["已安排答辩人数", stats.arrangedDefenseCount],
+    ["已归档论文数", stats.archivedCount]
+  ];
+
+  statsGrid.innerHTML = statItems
+    .map(
+      ([label, value]) => `
+        <article class="stat-card">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+        </article>
+      `
+    )
+    .join("");
+
+  const applications = (await loadApplications())
     .filter((item) => {
       if (user.role === "teacher") return item.teacherId === user.teacherId;
       if (user.role === "student") return item.studentId === user.studentId;
@@ -53,7 +77,7 @@
     })
     .slice(0, 5);
 
-  document.querySelector("#recentApplications").innerHTML =
+  recentApplications.innerHTML =
     applications.length === 0
       ? AppUI.emptyRow(5, "暂无选题申请记录")
       : applications

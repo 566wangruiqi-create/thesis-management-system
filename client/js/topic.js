@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("topics", userTitle());
   if (!user) return;
 
@@ -33,20 +33,25 @@
   }
 
   if (form) {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(form);
-      ThesisAPI.addTopic({
-        title: formData.get("title").trim(),
-        major: formData.get("major").trim(),
-        quota: formData.get("quota"),
-        teacherId: user.teacherId,
-        description: formData.get("description").trim()
-      });
-      form.reset();
-      document.querySelector("#topicTeacherId").value = user.teacherId;
-      AppUI.toast("课题已新增。");
-      renderTopics();
+
+      try {
+        await ThesisAPI.addTopic({
+          title: formData.get("title").trim(),
+          major: formData.get("major").trim(),
+          quota: formData.get("quota"),
+          teacherId: user.teacherId,
+          description: formData.get("description").trim()
+        });
+        form.reset();
+        document.querySelector("#topicTeacherId").value = user.teacherId;
+        AppUI.toast("课题已新增。");
+        await renderTopics();
+      } catch (error) {
+        AppUI.toast(error.message);
+      }
     });
   }
 
@@ -56,68 +61,79 @@
     return "课题管理";
   }
 
-  function getVisibleTopics() {
-    return ThesisAPI.getTopics().filter((topic) => {
+  async function getVisibleTopics() {
+    const topics = await ThesisAPI.getTopics();
+    return topics.filter((topic) => {
       if (user.role === "teacher") return topic.teacherId === user.teacherId;
       if (user.role === "student") return topic.status === "可选";
       return true;
     });
   }
 
-  function getStudentApplications() {
+  async function getStudentApplications() {
     if (user.role !== "student") return [];
-    return ThesisAPI.getApplications().filter((item) => item.studentId === user.studentId);
+    try {
+      return await ThesisAPI.getApplicationsFromServer();
+    } catch (error) {
+      return ThesisAPI.getApplications().filter((item) => item.studentId === user.studentId);
+    }
   }
 
-  function renderTopics() {
-    const topics = getVisibleTopics();
-    const studentApplications = getStudentApplications();
+  async function renderTopics() {
+    tbody.innerHTML = AppUI.emptyRow(7, "正在加载课题数据");
 
-    tbody.innerHTML =
-      topics.length === 0
-        ? AppUI.emptyRow(7, "暂无课题数据")
-        : topics
-            .map((topic) => {
-              const existing = studentApplications.find(
-                (item) => item.topicId === topic.id && item.status !== "已拒绝"
-              );
-              const canApply = user.role === "student" && topic.status === "可选" && !existing;
-              const action =
-                user.role === "student"
-                  ? `<button class="btn primary" data-apply="${topic.id}" ${
-                      canApply ? "" : "disabled"
-                    }>${existing ? "已申请" : "申请选题"}</button>`
-                  : "-";
+    try {
+      const topics = await getVisibleTopics();
+      const studentApplications = await getStudentApplications();
 
-              return `
-                <tr>
-                  <td>${AppUI.escapeHtml(topic.id)}</td>
-                  <td>
-                    <strong>${AppUI.escapeHtml(topic.title)}</strong><br />
-                    <span class="muted">${AppUI.escapeHtml(topic.description)}</span>
-                  </td>
-                  <td>${AppUI.escapeHtml(topic.teacherName)}</td>
-                  <td>${AppUI.escapeHtml(topic.major)}</td>
-                  <td>${topic.selectedCount}/${topic.quota}</td>
-                  <td>${AppUI.statusBadge(topic.status)}</td>
-                  <td>${action}</td>
-                </tr>
-              `;
-            })
-            .join("");
+      tbody.innerHTML =
+        topics.length === 0
+          ? AppUI.emptyRow(7, "暂无课题数据")
+          : topics
+              .map((topic) => {
+                const existing = studentApplications.find(
+                  (item) => item.topicId === topic.id && item.status !== "已拒绝"
+                );
+                const canApply = user.role === "student" && topic.status === "可选" && !existing;
+                const action =
+                  user.role === "student"
+                    ? `<button class="btn primary" data-apply="${topic.id}" ${
+                        canApply ? "" : "disabled"
+                      }>${existing ? "已申请" : "申请选题"}</button>`
+                    : "-";
 
-    tbody.querySelectorAll("[data-apply]").forEach((button) => {
-      button.addEventListener("click", () => {
-        try {
-          ThesisAPI.applyTopic(button.dataset.apply, user.studentId);
-          AppUI.toast("选题申请已提交。");
-          renderTopics();
-        } catch (error) {
-          AppUI.toast(error.message);
-        }
+                return `
+                  <tr>
+                    <td>${AppUI.escapeHtml(topic.id)}</td>
+                    <td>
+                      <strong>${AppUI.escapeHtml(topic.title)}</strong><br />
+                      <span class="muted">${AppUI.escapeHtml(topic.description)}</span>
+                    </td>
+                    <td>${AppUI.escapeHtml(topic.teacherName)}</td>
+                    <td>${AppUI.escapeHtml(topic.major)}</td>
+                    <td>${topic.selectedCount}/${topic.quota}</td>
+                    <td>${AppUI.statusBadge(topic.status)}</td>
+                    <td>${action}</td>
+                  </tr>
+                `;
+              })
+              .join("");
+
+      tbody.querySelectorAll("[data-apply]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          try {
+            await ThesisAPI.applyTopic(button.dataset.apply);
+            AppUI.toast("选题申请已提交。");
+            await renderTopics();
+          } catch (error) {
+            AppUI.toast(error.message);
+          }
+        });
       });
-    });
+    } catch (error) {
+      tbody.innerHTML = AppUI.emptyRow(7, `课题数据加载失败：${error.message}`);
+    }
   }
 
-  renderTopics();
+  await renderTopics();
 })();
