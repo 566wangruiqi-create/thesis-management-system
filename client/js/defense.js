@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("defense", userTitle());
   if (!user) return;
 
@@ -17,7 +17,7 @@
   if (user.role === "admin") {
     formPanel.classList.remove("hidden");
     subtitle.textContent = "为已通过选题的学生模拟安排答辩时间、地点和小组。";
-    fillStudentOptions();
+    await fillStudentOptions();
   } else if (user.role === "student") {
     formPanel.classList.add("hidden");
     subtitle.textContent = "查看自己的答辩时间、地点和答辩小组。";
@@ -27,20 +27,25 @@
   }
 
   if (form) {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(form);
-      ThesisAPI.addDefenseArrangement({
-        studentId: formData.get("studentId"),
-        time: formData.get("time").trim(),
-        place: formData.get("place").trim(),
-        group: formData.get("group").trim(),
-        chair: formData.get("chair").trim()
-      });
-      form.reset();
-      fillStudentOptions();
-      AppUI.toast("答辩安排已保存。");
-      renderDefense();
+
+      try {
+        await ThesisAPI.addDefenseArrangement({
+          studentId: formData.get("studentId"),
+          time: formData.get("time").trim(),
+          place: formData.get("place").trim(),
+          group: formData.get("group").trim(),
+          chair: formData.get("chair").trim()
+        });
+        form.reset();
+        await fillStudentOptions();
+        AppUI.toast("答辩安排已保存。");
+        await renderDefense();
+      } catch (error) {
+        AppUI.toast(error.message);
+      }
     });
   }
 
@@ -50,13 +55,18 @@
     return "答辩安排";
   }
 
-  function approvedApplications() {
-    return ThesisAPI.getApplications().filter((item) => item.status === "已通过");
+  async function approvedApplications() {
+    try {
+      return (await ThesisAPI.getApplicationsFromServer()).filter((item) => item.status === "已通过");
+    } catch (error) {
+      AppUI.toast(`学生选项暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getApplications().filter((item) => item.status === "已通过");
+    }
   }
 
-  function fillStudentOptions() {
+  async function fillStudentOptions() {
     if (!studentSelect) return;
-    const items = approvedApplications();
+    const items = await approvedApplications();
     studentSelect.innerHTML =
       items.length === 0
         ? `<option value="">暂无已通过选题学生</option>`
@@ -68,16 +78,23 @@
             .join("");
   }
 
-  function getVisibleArrangements() {
-    return ThesisAPI.getDefenseArrangements().filter((item) => {
-      if (user.role === "teacher") return item.teacherId === user.teacherId;
-      if (user.role === "student") return item.studentId === user.studentId;
-      return true;
-    });
+  async function getVisibleArrangements() {
+    try {
+      return await ThesisAPI.getDefenseArrangements();
+    } catch (error) {
+      AppUI.toast(`答辩安排暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getMockDefenseArrangements().filter((item) => {
+        if (user.role === "teacher") return item.teacherId === user.teacherId;
+        if (user.role === "student") return item.studentId === user.studentId;
+        return true;
+      });
+    }
   }
 
-  function renderDefense() {
-    const arrangements = getVisibleArrangements();
+  async function renderDefense() {
+    tbody.innerHTML = AppUI.emptyRow(8, "正在加载答辩安排");
+
+    const arrangements = await getVisibleArrangements();
     tbody.innerHTML =
       arrangements.length === 0
         ? AppUI.emptyRow(8, "暂无答辩安排")
@@ -99,5 +116,5 @@
             .join("");
   }
 
-  renderDefense();
+  await renderDefense();
 })();

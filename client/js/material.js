@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("materials", userTitle());
   if (!user) return;
 
@@ -22,18 +22,22 @@
   }
 
   if (form) {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(form);
-      ThesisAPI.submitMaterial({
-        studentId: user.studentId,
-        type: formData.get("type"),
-        title: formData.get("title").trim(),
-        fileName: formData.get("fileName").trim()
-      });
-      form.reset();
-      AppUI.toast("材料已提交，等待教师审核。");
-      renderMaterials();
+
+      try {
+        await ThesisAPI.submitMaterial({
+          type: formData.get("type"),
+          title: formData.get("title").trim(),
+          fileName: formData.get("fileName").trim()
+        });
+        form.reset();
+        AppUI.toast("材料已提交，等待教师审核。");
+        await renderMaterials();
+      } catch (error) {
+        AppUI.toast(error.message);
+      }
     });
   }
 
@@ -43,16 +47,23 @@
     return "材料审核";
   }
 
-  function getVisibleMaterials() {
-    return ThesisAPI.getMaterials().filter((item) => {
-      if (user.role === "teacher") return item.teacherId === user.teacherId;
-      if (user.role === "student") return item.studentId === user.studentId;
-      return true;
-    });
+  async function getVisibleMaterials() {
+    try {
+      return await ThesisAPI.getMaterialsFromServer();
+    } catch (error) {
+      AppUI.toast(`材料记录暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getMaterials().filter((item) => {
+        if (user.role === "teacher") return item.teacherId === user.teacherId;
+        if (user.role === "student") return item.studentId === user.studentId;
+        return true;
+      });
+    }
   }
 
-  function renderMaterials() {
-    const materials = getVisibleMaterials();
+  async function renderMaterials() {
+    tbody.innerHTML = AppUI.emptyRow(9, "正在加载材料记录");
+
+    const materials = await getVisibleMaterials();
     tbody.innerHTML =
       materials.length === 0
         ? AppUI.emptyRow(9, "暂无材料记录")
@@ -85,21 +96,29 @@
             .join("");
 
     tbody.querySelectorAll("[data-pass]").forEach((button) => {
-      button.addEventListener("click", () => {
-        ThesisAPI.reviewMaterial(button.dataset.pass, "已通过", "材料内容完整，审核通过。");
-        AppUI.toast("材料已审核通过。");
-        renderMaterials();
+      button.addEventListener("click", async () => {
+        try {
+          await ThesisAPI.reviewMaterial(button.dataset.pass, "已通过", "材料内容完整，审核通过。");
+          AppUI.toast("材料已审核通过。");
+          await renderMaterials();
+        } catch (error) {
+          AppUI.toast(error.message);
+        }
       });
     });
 
     tbody.querySelectorAll("[data-return]").forEach((button) => {
-      button.addEventListener("click", () => {
-        ThesisAPI.reviewMaterial(button.dataset.return, "退回修改", "请补充关键内容后重新提交。");
-        AppUI.toast("材料已退回修改。");
-        renderMaterials();
+      button.addEventListener("click", async () => {
+        try {
+          await ThesisAPI.reviewMaterial(button.dataset.return, "退回修改", "请补充关键内容后重新提交。");
+          AppUI.toast("材料已退回修改。");
+          await renderMaterials();
+        } catch (error) {
+          AppUI.toast(error.message);
+        }
       });
     });
   }
 
-  renderMaterials();
+  await renderMaterials();
 })();

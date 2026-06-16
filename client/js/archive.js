@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("archives", userTitle());
   if (!user) return;
 
@@ -17,7 +17,7 @@
   if (user.role === "admin") {
     formPanel.classList.remove("hidden");
     subtitle.textContent = "为已通过成绩的学生记录论文归档状态。";
-    fillStudentOptions();
+    await fillStudentOptions();
   } else if (user.role === "student") {
     formPanel.classList.add("hidden");
     subtitle.textContent = "查看自己的论文归档状态和存放位置。";
@@ -27,19 +27,24 @@
   }
 
   if (form) {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(form);
-      ThesisAPI.addArchive({
-        studentId: formData.get("studentId"),
-        archiveDate: formData.get("archiveDate"),
-        location: formData.get("location").trim(),
-        note: formData.get("note").trim()
-      });
-      form.reset();
-      fillStudentOptions();
-      AppUI.toast("论文归档已保存。");
-      renderArchives();
+
+      try {
+        await ThesisAPI.addArchive({
+          studentId: formData.get("studentId"),
+          archiveDate: formData.get("archiveDate"),
+          location: formData.get("location").trim(),
+          note: formData.get("note").trim()
+        });
+        form.reset();
+        await fillStudentOptions();
+        AppUI.toast("论文归档已保存。");
+        await renderArchives();
+      } catch (error) {
+        AppUI.toast(error.message);
+      }
     });
   }
 
@@ -49,9 +54,17 @@
     return "论文归档";
   }
 
-  function fillStudentOptions() {
+  async function fillStudentOptions() {
     if (!studentSelect) return;
-    const grades = ThesisAPI.getGrades().filter((item) => item.passed);
+
+    let grades = [];
+    try {
+      grades = (await ThesisAPI.getGrades()).filter((item) => item.passed);
+    } catch (error) {
+      AppUI.toast(`学生选项暂用本地备用数据：${error.message}`);
+      grades = ThesisAPI.getMockGrades().filter((item) => item.passed);
+    }
+
     studentSelect.innerHTML =
       grades.length === 0
         ? `<option value="">暂无可归档学生</option>`
@@ -63,16 +76,23 @@
             .join("");
   }
 
-  function getVisibleArchives() {
-    return ThesisAPI.getArchives().filter((item) => {
-      if (user.role === "teacher") return item.teacherId === user.teacherId;
-      if (user.role === "student") return item.studentId === user.studentId;
-      return true;
-    });
+  async function getVisibleArchives() {
+    try {
+      return await ThesisAPI.getArchives();
+    } catch (error) {
+      AppUI.toast(`归档记录暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getMockArchives().filter((item) => {
+        if (user.role === "teacher") return item.teacherId === user.teacherId;
+        if (user.role === "student") return item.studentId === user.studentId;
+        return true;
+      });
+    }
   }
 
-  function renderArchives() {
-    const archives = getVisibleArchives();
+  async function renderArchives() {
+    tbody.innerHTML = AppUI.emptyRow(7, "正在加载归档记录");
+
+    const archives = await getVisibleArchives();
     tbody.innerHTML =
       archives.length === 0
         ? AppUI.emptyRow(7, "暂无归档记录")
@@ -93,5 +113,5 @@
             .join("");
   }
 
-  renderArchives();
+  await renderArchives();
 })();

@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("users", "用户管理");
   if (!user) return;
 
@@ -11,7 +11,23 @@
   const teachersTable = document.querySelector("#teachersTable");
   const studentsTable = document.querySelector("#studentsTable");
 
-  const teachers = ThesisAPI.getTeachers();
+  teachersTable.innerHTML = AppUI.emptyRow(6, "正在加载教师用户");
+  studentsTable.innerHTML = AppUI.emptyRow(6, "正在加载学生用户");
+
+  async function loadUsers() {
+    try {
+      return await ThesisAPI.getUsersFromServer();
+    } catch (error) {
+      AppUI.toast(`用户列表暂用本地备用数据：${error.message}`);
+      return {
+        teachers: ThesisAPI.getTeachers(),
+        students: ThesisAPI.getStudents()
+      };
+    }
+  }
+
+  const { teachers, students } = await loadUsers();
+
   teachersTable.innerHTML =
     teachers.length === 0
       ? AppUI.emptyRow(6, "暂无教师用户")
@@ -30,7 +46,6 @@
           )
           .join("");
 
-  const students = ThesisAPI.getStudents();
   studentsTable.innerHTML =
     students.length === 0
       ? AppUI.emptyRow(6, "暂无学生用户")

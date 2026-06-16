@@ -14,7 +14,30 @@
 
   function formatDate(value) {
     if (!value) return "";
-    return String(value).includes("T") ? String(value).slice(0, 10) : String(value);
+    if (!String(value).includes("T")) return String(value);
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "";
+    if (!String(value).includes("T")) return String(value);
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 16).replace("T", " ");
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day} ${hour}:${minute}`;
   }
 
   function getToken() {
@@ -93,7 +116,15 @@
     return {
       ...item,
       studentId: item.studentId || item.student_id,
+      studentName: item.studentName || item.student_name,
+      topicId: item.topicId || item.topic_id,
+      topicTitle: item.topicTitle || item.topic_title,
       teacherId: item.teacherId || item.teacher_id,
+      teacherName: item.teacherName || item.teacher_name,
+      fileName: item.fileName || item.file_name,
+      submitDate: formatDate(item.submitDate || item.submit_date),
+      reviewDate: formatDate(item.reviewDate || item.review_date),
+      reviewComment: item.reviewComment || item.review_comment || "",
       status: item.status
     };
   }
@@ -102,7 +133,30 @@
     return {
       ...item,
       studentId: item.studentId || item.student_id,
+      studentName: item.studentName || item.student_name,
+      topicId: item.topicId || item.topic_id,
+      topicTitle: item.topicTitle || item.topic_title,
       teacherId: item.teacherId || item.teacher_id,
+      teacherName: item.teacherName || item.teacher_name,
+      time: formatDateTime(item.time || item.defense_time),
+      group: item.group || item.defense_group || "",
+      status: item.status
+    };
+  }
+
+  function normalizeGrade(item) {
+    return {
+      ...item,
+      studentId: item.studentId || item.student_id,
+      studentName: item.studentName || item.student_name,
+      topicId: item.topicId || item.topic_id,
+      topicTitle: item.topicTitle || item.topic_title,
+      teacherId: item.teacherId || item.teacher_id,
+      teacherName: item.teacherName || item.teacher_name,
+      tutorScore: item.tutorScore ?? item.tutor_score,
+      defenseScore: item.defenseScore ?? item.defense_score,
+      finalScore: item.finalScore ?? item.final_score,
+      passed: Boolean(item.passed),
       status: item.status
     };
   }
@@ -111,8 +165,20 @@
     return {
       ...item,
       studentId: item.studentId || item.student_id,
+      studentName: item.studentName || item.student_name,
+      topicId: item.topicId || item.topic_id,
+      topicTitle: item.topicTitle || item.topic_title,
       teacherId: item.teacherId || item.teacher_id,
+      teacherName: item.teacherName || item.teacher_name,
+      archiveDate: formatDate(item.archiveDate || item.archive_date),
       status: item.status
+    };
+  }
+
+  function normalizeStudent(student) {
+    return {
+      ...student,
+      className: student.className || student.class_name
     };
   }
 
@@ -206,6 +272,107 @@
       return applications.map(normalizeApplication);
     },
 
+    async approveApplication(applicationId, comment = "审核通过。") {
+      return request(`/applications/${applicationId}/approve`, {
+        method: "PUT",
+        body: JSON.stringify({ comment })
+      });
+    },
+
+    async rejectApplication(applicationId, comment = "请调整选题方向后重新申请。") {
+      return request(`/applications/${applicationId}/reject`, {
+        method: "PUT",
+        body: JSON.stringify({ comment })
+      });
+    },
+
+    async getMaterialsFromServer() {
+      const materials = await request("/materials");
+      return materials.map(normalizeMaterial);
+    },
+
+    async submitMaterial(material) {
+      const data = await request("/materials", {
+        method: "POST",
+        body: JSON.stringify({
+          type: material.type,
+          title: material.title,
+          file_name: material.fileName
+        })
+      });
+      return data;
+    },
+
+    async reviewMaterial(materialId, status, reviewComment) {
+      return request(`/materials/${materialId}/review`, {
+        method: "PUT",
+        body: JSON.stringify({
+          status,
+          review_comment: reviewComment
+        })
+      });
+    },
+
+    async getDefenseArrangements() {
+      const defenses = await request("/defenses");
+      return defenses.map(normalizeDefense);
+    },
+
+    async addDefenseArrangement(arrangement) {
+      return request("/defenses", {
+        method: "POST",
+        body: JSON.stringify({
+          student_id: arrangement.studentId,
+          defense_time: arrangement.time,
+          place: arrangement.place,
+          defense_group: arrangement.group,
+          chair: arrangement.chair
+        })
+      });
+    },
+
+    async getGrades() {
+      const grades = await request("/grades");
+      return grades.map(normalizeGrade);
+    },
+
+    async addGrade(grade) {
+      return request("/grades", {
+        method: "POST",
+        body: JSON.stringify({
+          student_id: grade.studentId,
+          tutor_score: grade.tutorScore,
+          defense_score: grade.defenseScore,
+          remark: grade.remark
+        })
+      });
+    },
+
+    async getArchives() {
+      const archives = await request("/archives");
+      return archives.map(normalizeArchive);
+    },
+
+    async addArchive(archive) {
+      return request("/archives", {
+        method: "POST",
+        body: JSON.stringify({
+          student_id: archive.studentId,
+          archive_date: archive.archiveDate,
+          location: archive.location,
+          note: archive.note
+        })
+      });
+    },
+
+    async getUsersFromServer() {
+      const users = await request("/users");
+      return {
+        teachers: users.teachers || [],
+        students: (users.students || []).map(normalizeStudent)
+      };
+    },
+
     async getDashboardStatsFromServer() {
       const [topics, applications, materials, defenses, archives] = await Promise.all([
         this.getTopics(),
@@ -273,7 +440,7 @@
       return clone(getData().applications);
     },
 
-    approveApplication(applicationId, comment = "审核通过。") {
+    approveMockApplication(applicationId, comment = "审核通过。") {
       const data = getData();
       const application = data.applications.find((item) => item.id === applicationId);
       if (!application) {
@@ -321,7 +488,7 @@
       return clone(application);
     },
 
-    rejectApplication(applicationId, comment = "请调整选题方向后重新申请。") {
+    rejectMockApplication(applicationId, comment = "请调整选题方向后重新申请。") {
       const data = getData();
       const application = data.applications.find((item) => item.id === applicationId);
       if (!application) {
@@ -338,7 +505,7 @@
       return clone(getData().materials);
     },
 
-    submitMaterial(material) {
+    submitMockMaterial(material) {
       const data = getData();
       const student = findStudent(data, material.studentId);
       const approved = getApprovedApplication(data, material.studentId);
@@ -381,7 +548,7 @@
       return clone(record);
     },
 
-    reviewMaterial(materialId, status, reviewComment) {
+    reviewMockMaterial(materialId, status, reviewComment) {
       const data = getData();
       const material = data.materials.find((item) => item.id === materialId);
       if (!material) {
@@ -394,11 +561,11 @@
       return clone(material);
     },
 
-    getDefenseArrangements() {
+    getMockDefenseArrangements() {
       return clone(getData().defenseArrangements);
     },
 
-    addDefenseArrangement(arrangement) {
+    addMockDefenseArrangement(arrangement) {
       const data = getData();
       const student = findStudent(data, arrangement.studentId);
       const approved = getApprovedApplication(data, arrangement.studentId);
@@ -437,11 +604,11 @@
       return clone(record);
     },
 
-    getGrades() {
+    getMockGrades() {
       return clone(getData().grades);
     },
 
-    addGrade(grade) {
+    addMockGrade(grade) {
       const data = getData();
       const student = findStudent(data, grade.studentId);
       const approved = getApprovedApplication(data, grade.studentId);
@@ -483,11 +650,11 @@
       return clone(record);
     },
 
-    getArchives() {
+    getMockArchives() {
       return clone(getData().archives);
     },
 
-    addArchive(archive) {
+    addMockArchive(archive) {
       const data = getData();
       const student = findStudent(data, archive.studentId);
       const approved = getApprovedApplication(data, archive.studentId);

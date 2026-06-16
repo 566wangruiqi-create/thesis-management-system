@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("grades", userTitle());
   if (!user) return;
 
@@ -17,7 +17,7 @@
   if (user.role === "admin") {
     formPanel.classList.remove("hidden");
     subtitle.textContent = "录入指导教师评分、答辩评分并自动计算最终成绩。";
-    fillStudentOptions();
+    await fillStudentOptions();
   } else if (user.role === "student") {
     formPanel.classList.add("hidden");
     subtitle.textContent = "查看自己的最终成绩和是否通过。";
@@ -27,19 +27,24 @@
   }
 
   if (form) {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(form);
-      ThesisAPI.addGrade({
-        studentId: formData.get("studentId"),
-        tutorScore: formData.get("tutorScore"),
-        defenseScore: formData.get("defenseScore"),
-        remark: formData.get("remark").trim()
-      });
-      form.reset();
-      fillStudentOptions();
-      AppUI.toast("成绩已保存。");
-      renderGrades();
+
+      try {
+        await ThesisAPI.addGrade({
+          studentId: formData.get("studentId"),
+          tutorScore: formData.get("tutorScore"),
+          defenseScore: formData.get("defenseScore"),
+          remark: formData.get("remark").trim()
+        });
+        form.reset();
+        await fillStudentOptions();
+        AppUI.toast("成绩已保存。");
+        await renderGrades();
+      } catch (error) {
+        AppUI.toast(error.message);
+      }
     });
   }
 
@@ -50,9 +55,17 @@
     return "成绩管理";
   }
 
-  function fillStudentOptions() {
+  async function fillStudentOptions() {
     if (!studentSelect) return;
-    const approved = ThesisAPI.getApplications().filter((item) => item.status === "已通过");
+
+    let approved = [];
+    try {
+      approved = (await ThesisAPI.getApplicationsFromServer()).filter((item) => item.status === "已通过");
+    } catch (error) {
+      AppUI.toast(`学生选项暂用本地备用数据：${error.message}`);
+      approved = ThesisAPI.getApplications().filter((item) => item.status === "已通过");
+    }
+
     studentSelect.innerHTML =
       approved.length === 0
         ? `<option value="">暂无可录入成绩学生</option>`
@@ -64,16 +77,23 @@
             .join("");
   }
 
-  function getVisibleGrades() {
-    return ThesisAPI.getGrades().filter((item) => {
-      if (user.role === "teacher") return item.teacherId === user.teacherId;
-      if (user.role === "student") return item.studentId === user.studentId;
-      return true;
-    });
+  async function getVisibleGrades() {
+    try {
+      return await ThesisAPI.getGrades();
+    } catch (error) {
+      AppUI.toast(`成绩记录暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getMockGrades().filter((item) => {
+        if (user.role === "teacher") return item.teacherId === user.teacherId;
+        if (user.role === "student") return item.studentId === user.studentId;
+        return true;
+      });
+    }
   }
 
-  function renderGrades() {
-    const grades = getVisibleGrades();
+  async function renderGrades() {
+    tbody.innerHTML = AppUI.emptyRow(8, "正在加载成绩记录");
+
+    const grades = await getVisibleGrades();
     tbody.innerHTML =
       grades.length === 0
         ? AppUI.emptyRow(8, "暂无成绩记录")
@@ -95,5 +115,5 @@
             .join("");
   }
 
-  renderGrades();
+  await renderGrades();
 })();

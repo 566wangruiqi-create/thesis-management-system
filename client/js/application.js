@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   const user = AppAuth.renderShell("applications", userTitle());
   if (!user) return;
 
@@ -25,16 +25,23 @@
     return "选题申请";
   }
 
-  function getVisibleApplications() {
-    return ThesisAPI.getApplications().filter((item) => {
-      if (user.role === "teacher") return item.teacherId === user.teacherId;
-      if (user.role === "student") return item.studentId === user.studentId;
-      return true;
-    });
+  async function getVisibleApplications() {
+    try {
+      return await ThesisAPI.getApplicationsFromServer();
+    } catch (error) {
+      AppUI.toast(`选题申请暂用本地备用数据：${error.message}`);
+      return ThesisAPI.getApplications().filter((item) => {
+        if (user.role === "teacher") return item.teacherId === user.teacherId;
+        if (user.role === "student") return item.studentId === user.studentId;
+        return true;
+      });
+    }
   }
 
-  function renderApplications() {
-    const applications = getVisibleApplications();
+  async function renderApplications() {
+    tbody.innerHTML = AppUI.emptyRow(8, "正在加载选题申请记录");
+
+    const applications = await getVisibleApplications();
     tbody.innerHTML =
       applications.length === 0
         ? AppUI.emptyRow(8, "暂无选题申请记录")
@@ -66,21 +73,29 @@
             .join("");
 
     tbody.querySelectorAll("[data-approve]").forEach((button) => {
-      button.addEventListener("click", () => {
-        ThesisAPI.approveApplication(button.dataset.approve);
-        AppUI.toast("选题申请已通过。");
-        renderApplications();
+      button.addEventListener("click", async () => {
+        try {
+          await ThesisAPI.approveApplication(button.dataset.approve);
+          AppUI.toast("选题申请已通过。");
+          await renderApplications();
+        } catch (error) {
+          AppUI.toast(error.message);
+        }
       });
     });
 
     tbody.querySelectorAll("[data-reject]").forEach((button) => {
-      button.addEventListener("click", () => {
-        ThesisAPI.rejectApplication(button.dataset.reject);
-        AppUI.toast("选题申请已拒绝。");
-        renderApplications();
+      button.addEventListener("click", async () => {
+        try {
+          await ThesisAPI.rejectApplication(button.dataset.reject);
+          AppUI.toast("选题申请已拒绝。");
+          await renderApplications();
+        } catch (error) {
+          AppUI.toast(error.message);
+        }
       });
     });
   }
 
-  renderApplications();
+  await renderApplications();
 })();
