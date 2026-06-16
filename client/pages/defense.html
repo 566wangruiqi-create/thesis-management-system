@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>答辩安排 - 毕业论文管理系统</title>
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-line">
+          <span class="brand-mark">毕</span>
+          <span>论文管理</span>
+        </div>
+        <nav id="sidebarNav" class="nav-list" aria-label="主导航"></nav>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div id="topbarTitle" class="topbar-title">答辩安排</div>
+          <div class="user-meta">
+            <span id="currentUserAvatar" class="avatar"></span>
+            <span id="currentUserName"></span>
+            <span id="currentUserRole" class="badge default"></span>
+            <button id="logoutBtn" class="btn">退出</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="page-header">
+            <div>
+              <h1>答辩安排</h1>
+              <p id="defenseSubtitle" class="muted"></p>
+            </div>
+          </section>
+
+          <section id="defenseFormPanel" class="panel hidden">
+            <div class="panel-header">
+              <h2>安排答辩</h2>
+            </div>
+            <form id="defenseForm" class="form-grid">
+              <div class="two-col">
+                <div class="form-row">
+                  <label for="defenseStudent">学生</label>
+                  <select id="defenseStudent" name="studentId" required></select>
+                </div>
+                <div class="form-row">
+                  <label for="defenseTime">答辩时间</label>
+                  <input id="defenseTime" name="time" placeholder="2026-05-28 09:00" required />
+                </div>
+              </div>
+              <div class="three-col">
+                <div class="form-row">
+                  <label for="defensePlace">地点</label>
+                  <input id="defensePlace" name="place" placeholder="明德楼 305" required />
+                </div>
+                <div class="form-row">
+                  <label for="defenseGroup">小组</label>
+                  <input id="defenseGroup" name="group" placeholder="第一答辩组" required />
+                </div>
+                <div class="form-row">
+                  <label for="defenseChair">组长</label>
+                  <input id="defenseChair" name="chair" placeholder="刘教授" required />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn primary" type="submit">保存安排</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>答辩列表</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>学生</th>
+                    <th>课题</th>
+                    <th>指导教师</th>
+                    <th>时间</th>
+                    <th>地点</th>
+                    <th>小组</th>
+                    <th>组长</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody id="defenseTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../js/mockData.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/defense.js"></script>
+  </body>
+</html>

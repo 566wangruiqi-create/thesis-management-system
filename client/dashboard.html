@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>后台首页 - 毕业论文管理系统</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-line">
+          <span class="brand-mark">毕</span>
+          <span>论文管理</span>
+        </div>
+        <nav id="sidebarNav" class="nav-list" aria-label="主导航"></nav>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div id="topbarTitle" class="topbar-title">后台首页</div>
+          <div class="user-meta">
+            <span id="currentUserAvatar" class="avatar"></span>
+            <span id="currentUserName"></span>
+            <span id="currentUserRole" class="badge default"></span>
+            <button id="logoutBtn" class="btn">退出</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="page-header">
+            <div>
+              <h1>后台首页</h1>
+              <p class="muted">查看当前论文管理流程的关键统计和最近业务状态。</p>
+            </div>
+          </section>
+
+          <section id="statsGrid" class="stats-grid" aria-label="统计卡片"></section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>系统流程</h2>
+            </div>
+            <div id="flowList" class="flow-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>最近选题申请</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>学生</th>
+                    <th>课题</th>
+                    <th>指导教师</th>
+                    <th>申请日期</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody id="recentApplications"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="./js/mockData.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/dashboard.js"></script>
+  </body>
+</html>

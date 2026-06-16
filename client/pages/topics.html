@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>课题管理 - 毕业论文管理系统</title>
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-line">
+          <span class="brand-mark">毕</span>
+          <span>论文管理</span>
+        </div>
+        <nav id="sidebarNav" class="nav-list" aria-label="主导航"></nav>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div id="topbarTitle" class="topbar-title">课题管理</div>
+          <div class="user-meta">
+            <span id="currentUserAvatar" class="avatar"></span>
+            <span id="currentUserName"></span>
+            <span id="currentUserRole" class="badge default"></span>
+            <button id="logoutBtn" class="btn">退出</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="page-header">
+            <div>
+              <h1>课题管理</h1>
+              <p id="topicSubtitle" class="muted"></p>
+            </div>
+            <button id="toggleTopicForm" class="btn primary">新增课题</button>
+          </section>
+
+          <section id="topicFormPanel" class="panel hidden">
+            <div class="panel-header">
+              <h2>发布课题</h2>
+            </div>
+            <form id="topicForm" class="form-grid">
+              <input id="topicTeacherId" type="hidden" name="teacherId" />
+              <div class="two-col">
+                <div class="form-row">
+                  <label for="topicTitle">课题名称</label>
+                  <input id="topicTitle" name="title" required />
+                </div>
+                <div class="form-row">
+                  <label for="topicMajor">适用专业</label>
+                  <input id="topicMajor" name="major" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <label for="topicQuota">可选人数</label>
+                <input id="topicQuota" name="quota" type="number" min="1" max="5" value="1" required />
+              </div>
+              <div class="form-row">
+                <label for="topicDescription">课题说明</label>
+                <textarea id="topicDescription" name="description" required></textarea>
+              </div>
+              <div class="form-actions">
+                <button class="btn primary" type="submit">保存课题</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>课题列表</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>编号</th>
+                    <th>课题信息</th>
+                    <th>指导教师</th>
+                    <th>适用专业</th>
+                    <th>人数</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="topicsTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../js/mockData.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/topic.js"></script>
+  </body>
+</html>

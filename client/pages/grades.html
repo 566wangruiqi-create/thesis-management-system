@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>成绩管理 - 毕业论文管理系统</title>
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-line">
+          <span class="brand-mark">毕</span>
+          <span>论文管理</span>
+        </div>
+        <nav id="sidebarNav" class="nav-list" aria-label="主导航"></nav>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div id="topbarTitle" class="topbar-title">成绩管理</div>
+          <div class="user-meta">
+            <span id="currentUserAvatar" class="avatar"></span>
+            <span id="currentUserName"></span>
+            <span id="currentUserRole" class="badge default"></span>
+            <button id="logoutBtn" class="btn">退出</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="page-header">
+            <div>
+              <h1>成绩管理</h1>
+              <p id="gradesSubtitle" class="muted"></p>
+            </div>
+          </section>
+
+          <section id="gradeFormPanel" class="panel hidden">
+            <div class="panel-header">
+              <h2>录入成绩</h2>
+            </div>
+            <form id="gradeForm" class="form-grid">
+              <div class="three-col">
+                <div class="form-row">
+                  <label for="gradeStudent">学生</label>
+                  <select id="gradeStudent" name="studentId" required></select>
+                </div>
+                <div class="form-row">
+                  <label for="tutorScore">指导教师评分</label>
+                  <input id="tutorScore" name="tutorScore" type="number" min="0" max="100" required />
+                </div>
+                <div class="form-row">
+                  <label for="defenseScore">答辩评分</label>
+                  <input id="defenseScore" name="defenseScore" type="number" min="0" max="100" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <label for="gradeRemark">备注</label>
+                <textarea id="gradeRemark" name="remark"></textarea>
+              </div>
+              <div class="form-actions">
+                <button class="btn primary" type="submit">保存成绩</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>成绩列表</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>学生</th>
+                    <th>课题</th>
+                    <th>指导教师</th>
+                    <th>指导评分</th>
+                    <th>答辩评分</th>
+                    <th>最终成绩</th>
+                    <th>是否通过</th>
+                    <th>备注</th>
+                  </tr>
+                </thead>
+                <tbody id="gradesTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../js/mockData.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/grade.js"></script>
+  </body>
+</html>

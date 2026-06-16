@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - 毕业论文管理系统</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-intro">
+        <div>
+          <div class="brand-line">
+            <span class="brand-mark">毕</span>
+            <span>毕业论文管理系统</span>
+          </div>
+          <h1>课程设计前端原型</h1>
+          <p>围绕选题、材料审核、答辩安排、成绩录入和论文归档完成一条可演示的管理流程。</p>
+        </div>
+        <div class="login-flow" aria-label="业务流程">
+          <span>教师发布课题</span>
+          <span>学生申请选题</span>
+          <span>教师审核材料</span>
+          <span>管理员完成归档</span>
+        </div>
+      </section>
+
+      <section class="login-card">
+        <h2>账号登录</h2>
+        <p class="muted">使用模拟账号进入对应角色后台。</p>
+        <form id="loginForm" class="form-grid">
+          <div class="form-row">
+            <label for="username">账号</label>
+            <input id="username" name="username" autocomplete="username" placeholder="admin / teacher / student" />
+          </div>
+          <div class="form-row">
+            <label for="password">密码</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="123456" />
+          </div>
+          <p id="loginMessage" class="message" role="alert"></p>
+          <button class="btn primary" type="submit">登录系统</button>
+        </form>
+        <div class="hint-box">
+          管理员：admin / 123456<br />
+          教师：teacher / 123456<br />
+          学生：student / 123456
+        </div>
+      </section>
+    </main>
+
+    <script src="./js/mockData.js"></script>
+    <script src="./js/auth.js"></script>
+    <script>
+      AppAuth.bindLoginForm();
+    </script>
+  </body>
+</html>

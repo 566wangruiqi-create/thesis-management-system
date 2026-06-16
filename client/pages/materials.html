@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>材料提交与审核 - 毕业论文管理系统</title>
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-line">
+          <span class="brand-mark">毕</span>
+          <span>论文管理</span>
+        </div>
+        <nav id="sidebarNav" class="nav-list" aria-label="主导航"></nav>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div id="topbarTitle" class="topbar-title">材料提交与审核</div>
+          <div class="user-meta">
+            <span id="currentUserAvatar" class="avatar"></span>
+            <span id="currentUserName"></span>
+            <span id="currentUserRole" class="badge default"></span>
+            <button id="logoutBtn" class="btn">退出</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="page-header">
+            <div>
+              <h1>材料提交与审核</h1>
+              <p id="materialsSubtitle" class="muted"></p>
+            </div>
+          </section>
+
+          <section id="materialFormPanel" class="panel hidden">
+            <div class="panel-header">
+              <h2>提交材料</h2>
+            </div>
+            <form id="materialForm" class="form-grid">
+              <div class="three-col">
+                <div class="form-row">
+                  <label for="materialType">材料类型</label>
+                  <select id="materialType" name="type" required>
+                    <option value="开题报告">开题报告</option>
+                    <option value="中期检查">中期检查</option>
+                    <option value="论文终稿">论文终稿</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label for="materialTitle">材料标题</label>
+                  <input id="materialTitle" name="title" required />
+                </div>
+                <div class="form-row">
+                  <label for="materialFile">文件名</label>
+                  <input id="materialFile" name="fileName" placeholder="opening_report.docx" required />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn primary" type="submit">提交材料</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>材料记录</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>学生</th>
+                    <th>课题</th>
+                    <th>类型</th>
+                    <th>标题</th>
+                    <th>文件</th>
+                    <th>提交日期</th>
+                    <th>状态</th>
+                    <th>审核意见</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="materialsTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../js/mockData.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/material.js"></script>
+  </body>
+</html>
