@@ -48,16 +48,12 @@
   }
 
   async function getVisibleMaterials() {
-    try {
-      return await ThesisAPI.getMaterialsFromServer();
-    } catch (error) {
-      AppUI.toast(`材料记录暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getMaterials().filter((item) => {
-        if (user.role === "teacher") return item.teacherId === user.teacherId;
-        if (user.role === "student") return item.studentId === user.studentId;
-        return true;
-      });
-    }
+    const materials = await ThesisAPI.getMaterials();
+    return materials.filter((item) => {
+      if (user.role === "teacher") return item.teacherId === user.teacherId;
+      if (user.role === "student") return item.studentId === user.studentId;
+      return true;
+    });
   }
 
   async function renderMaterials() {

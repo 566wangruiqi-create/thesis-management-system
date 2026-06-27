@@ -33,20 +33,11 @@
     .join("");
 
   async function loadStats() {
-    try {
-      return await ThesisAPI.getDashboardStatsFromServer();
-    } catch (error) {
-      AppUI.toast(`首页统计暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getDashboardStats();
-    }
+    return ThesisAPI.getDashboardStats();
   }
 
   async function loadApplications() {
-    try {
-      return await ThesisAPI.getApplicationsFromServer();
-    } catch (error) {
-      return ThesisAPI.getApplications();
-    }
+    return ThesisAPI.getApplications();
   }
 
   const stats = await loadStats();

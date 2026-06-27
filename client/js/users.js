@@ -15,15 +15,7 @@
   studentsTable.innerHTML = AppUI.emptyRow(6, "正在加载学生用户");
 
   async function loadUsers() {
-    try {
-      return await ThesisAPI.getUsersFromServer();
-    } catch (error) {
-      AppUI.toast(`用户列表暂用本地备用数据：${error.message}`);
-      return {
-        teachers: ThesisAPI.getTeachers(),
-        students: ThesisAPI.getStudents()
-      };
-    }
+    return ThesisAPI.getUsers();
   }
 
   const { teachers, students } = await loadUsers();

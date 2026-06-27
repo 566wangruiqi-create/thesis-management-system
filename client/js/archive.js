@@ -58,12 +58,7 @@
     if (!studentSelect) return;
 
     let grades = [];
-    try {
-      grades = (await ThesisAPI.getGrades()).filter((item) => item.passed);
-    } catch (error) {
-      AppUI.toast(`学生选项暂用本地备用数据：${error.message}`);
-      grades = ThesisAPI.getMockGrades().filter((item) => item.passed);
-    }
+    grades = (await ThesisAPI.getGrades()).filter((item) => item.passed);
 
     studentSelect.innerHTML =
       grades.length === 0
@@ -77,16 +72,12 @@
   }
 
   async function getVisibleArchives() {
-    try {
-      return await ThesisAPI.getArchives();
-    } catch (error) {
-      AppUI.toast(`归档记录暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getMockArchives().filter((item) => {
-        if (user.role === "teacher") return item.teacherId === user.teacherId;
-        if (user.role === "student") return item.studentId === user.studentId;
-        return true;
-      });
-    }
+    const archives = await ThesisAPI.getArchives();
+    return archives.filter((item) => {
+      if (user.role === "teacher") return item.teacherId === user.teacherId;
+      if (user.role === "student") return item.studentId === user.studentId;
+      return true;
+    });
   }
 
   async function renderArchives() {

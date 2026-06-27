@@ -72,11 +72,7 @@
 
   async function getStudentApplications() {
     if (user.role !== "student") return [];
-    try {
-      return await ThesisAPI.getApplicationsFromServer();
-    } catch (error) {
-      return ThesisAPI.getApplications().filter((item) => item.studentId === user.studentId);
-    }
+    return (await ThesisAPI.getApplications()).filter((item) => item.studentId === user.studentId);
   }
 
   async function renderTopics() {

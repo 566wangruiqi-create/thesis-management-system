@@ -59,12 +59,7 @@
     if (!studentSelect) return;
 
     let approved = [];
-    try {
-      approved = (await ThesisAPI.getApplicationsFromServer()).filter((item) => item.status === "已通过");
-    } catch (error) {
-      AppUI.toast(`学生选项暂用本地备用数据：${error.message}`);
-      approved = ThesisAPI.getApplications().filter((item) => item.status === "已通过");
-    }
+    approved = (await ThesisAPI.getApplications()).filter((item) => item.status === "已通过");
 
     studentSelect.innerHTML =
       approved.length === 0
@@ -78,16 +73,12 @@
   }
 
   async function getVisibleGrades() {
-    try {
-      return await ThesisAPI.getGrades();
-    } catch (error) {
-      AppUI.toast(`成绩记录暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getMockGrades().filter((item) => {
-        if (user.role === "teacher") return item.teacherId === user.teacherId;
-        if (user.role === "student") return item.studentId === user.studentId;
-        return true;
-      });
-    }
+    const grades = await ThesisAPI.getGrades();
+    return grades.filter((item) => {
+      if (user.role === "teacher") return item.teacherId === user.teacherId;
+      if (user.role === "student") return item.studentId === user.studentId;
+      return true;
+    });
   }
 
   async function renderGrades() {

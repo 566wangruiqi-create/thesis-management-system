@@ -26,16 +26,12 @@
   }
 
   async function getVisibleApplications() {
-    try {
-      return await ThesisAPI.getApplicationsFromServer();
-    } catch (error) {
-      AppUI.toast(`选题申请暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getApplications().filter((item) => {
-        if (user.role === "teacher") return item.teacherId === user.teacherId;
-        if (user.role === "student") return item.studentId === user.studentId;
-        return true;
-      });
-    }
+    const applications = await ThesisAPI.getApplications();
+    return applications.filter((item) => {
+      if (user.role === "teacher") return item.teacherId === user.teacherId;
+      if (user.role === "student") return item.studentId === user.studentId;
+      return true;
+    });
   }
 
   async function renderApplications() {

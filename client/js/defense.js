@@ -56,12 +56,7 @@
   }
 
   async function approvedApplications() {
-    try {
-      return (await ThesisAPI.getApplicationsFromServer()).filter((item) => item.status === "已通过");
-    } catch (error) {
-      AppUI.toast(`学生选项暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getApplications().filter((item) => item.status === "已通过");
-    }
+    return (await ThesisAPI.getApplications()).filter((item) => item.status === "已通过");
   }
 
   async function fillStudentOptions() {
@@ -79,16 +74,12 @@
   }
 
   async function getVisibleArrangements() {
-    try {
-      return await ThesisAPI.getDefenseArrangements();
-    } catch (error) {
-      AppUI.toast(`答辩安排暂用本地备用数据：${error.message}`);
-      return ThesisAPI.getMockDefenseArrangements().filter((item) => {
-        if (user.role === "teacher") return item.teacherId === user.teacherId;
-        if (user.role === "student") return item.studentId === user.studentId;
-        return true;
-      });
-    }
+    const arrangements = await ThesisAPI.getDefenseArrangements();
+    return arrangements.filter((item) => {
+      if (user.role === "teacher") return item.teacherId === user.teacherId;
+      if (user.role === "student") return item.studentId === user.studentId;
+      return true;
+    });
   }
 
   async function renderDefense() {

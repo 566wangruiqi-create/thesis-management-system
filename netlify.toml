@@ -1,0 +1,12 @@
+[build]
+  publish = "client"
+
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 302
+
+[[redirects]]
+  from = "/demo"
+  to = "/login.html?demo=1"
+  status = 302
